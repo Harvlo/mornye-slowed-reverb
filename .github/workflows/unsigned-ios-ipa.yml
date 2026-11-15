@@ -1,0 +1,104 @@
+# Unsigned iOS IPA for sideloading (AltStore and similar).
+#
+# Fork of the packaging in release.yml's build-ios job. This one runs on a
+# GitHub-hosted Mac, skips code signing, and does not need the Discord SDK
+# secret. Download the ios-ipa artifact from the run.
+
+name: Unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-ipa:
+    name: Build unsigned IPA
+    runs-on: macos-15
+    env:
+      MORNYE_DISCORD_SDK: "0"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Show Xcode
+        run: xcodebuild -version
+
+      - name: Install Rust
+        run: |
+          if ! command -v rustup >/dev/null 2>&1; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
+          fi
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Build Rust backend for iOS
+        run: bash scripts/build_ios.sh
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Prepare Flutter framework patch
+        run: dart scripts/prepare_flutter_sdk.dart
+
+      - name: Normalize ffmpeg plugin shell scripts (strip CRLF)
+        run: |
+          find "$HOME/.pub-cache/hosted" -path "*ffmpeg_kit_flutter_new_audio*/scripts/*.sh" -type f -print0 |
+            while IFS= read -r -d '' f; do
+              perl -pi -e 's/\r$//' "$f"
+              chmod +x "$f"
+            done
+
+      - name: Generate app icons
+        run: dart run flutter_launcher_icons
+
+      - name: Install pods without the Discord SDK
+        working-directory: ios
+        run: pod install
+
+      - name: Build iOS (unsigned)
+        run: |
+          flutter build ios --release --no-codesign --config-only --target lib/main.dart \
+            --dart-define="GIT_COMMIT=$(git rev-parse --short=8 HEAD)"
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Runner.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
+      - name: Create IPA
+        run: |
+          version="$(awk '/^version:/ { print $2 }' pubspec.yaml | cut -d+ -f1)"
+          test -n "$version"
+          mkdir -p build/ios/ipa
+          cd ios/build/Runner.xcarchive/Products/Applications
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r "$GITHUB_WORKSPACE/build/ios/ipa/Mornye-${version}-slowed-reverb-ios-unsigned.ipa" Payload
+          rm -rf Payload
+          test -s "$GITHUB_WORKSPACE/build/ios/ipa/Mornye-${version}-slowed-reverb-ios-unsigned.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ios-ipa
+          path: build/ios/ipa/Mornye-*-slowed-reverb-ios-unsigned.ipa
+          if-no-files-found: error
