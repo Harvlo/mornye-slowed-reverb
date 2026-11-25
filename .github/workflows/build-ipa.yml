@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-15-intel
     env:
       XCODE_APP: /Applications/Xcode_16.4.app
     steps:
