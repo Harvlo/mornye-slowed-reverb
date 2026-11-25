@@ -1,0 +1,79 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      XCODE_APP: /Applications/Xcode_16.4.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then brew install xcodegen; fi
+          xcodegen --version
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Slowed.xcodeproj \
+            -target Slowed \
+            -configuration Release \
+            -sdk iphoneos \
+            SYMROOT="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            ONLY_ACTIVE_ARCH=NO \
+            build | tee xcodebuild.log | grep -E "error:|warning: unre|\*\* BUILD" || true
+          test -d build/Release-iphoneos/Slowed.app
+
+      - name: Show errors
+        if: failure()
+        run: grep -n -E "error:" xcodebuild.log | head -100 || true
+
+      - name: Package IPA
+        run: |
+          rm -rf Payload
+          mkdir Payload
+          cp -R build/Release-iphoneos/Slowed.app Payload/
+          zip -qry Slowed.ipa Payload
+          ls -la Slowed.ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Slowed-ipa
+          path: Slowed.ipa
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Slowed 1.0 (build ${{ github.run_number }})
+          make_latest: true
+          body: |
+            IPA sin firmar para instalar con AltStore / SideStore.
+            Commit: ${{ github.sha }}
+          files: Slowed.ipa
