@@ -16,6 +16,7 @@ final class AudioPlayer: ObservableObject {
     @Published private(set) var shuffle: Bool = false
     @Published var repeatMode: RepeatMode = .off
     @Published var errorMessage: String? = nil
+    @Published private(set) var formatInfo: String = ""
     @Published var settings: EffectSettings {
         didSet {
             if settings != oldValue {
@@ -282,7 +283,9 @@ final class AudioPlayer: ObservableObject {
         ensureGraph(for: f.processingFormat)
         duration = Double(f.length) / f.processingFormat.sampleRate
         currentTime = 0
+        formatInfo = AudioFormatInfo.describe(f, url: url)
         loadArtwork(for: track)
+        LyricsStore.shared.load(for: track)
         schedule(from: 0)
         if autoplay {
             play()
@@ -412,7 +415,15 @@ final class AudioPlayer: ObservableObject {
         duration = 0
         stopTicking()
         updatePanTimer()
+        formatInfo = ""
+        LyricsStore.shared.load(for: nil)
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    /// Precise position in song time (for lyrics). Accounts for the playback rate automatically,
+    /// because it counts file frames rendered by the player node.
+    func livePosition() -> Double {
+        return isPlaying ? computeCurrentTime() : currentTime
     }
 
     private func computeCurrentTime() -> Double {

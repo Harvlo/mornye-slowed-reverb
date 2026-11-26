@@ -24,7 +24,8 @@
 - **Ecualizador de 10 bandas** con presets (Plano, Bass Boost, Voces, Pop, Rock, Hip-Hop, Electrónica…) y bass boost aparte.
 - **Efectos extra**: audio 8D, eco y «bajo el agua».
 - **Biblioteca**: importa MP3, M4A, WAV, AIFF y FLAC desde Archivos (varias a la vez), o desde otra app con *Compartir › Abrir en Slowed*. Lee portada, título, artista, álbum y la marca de explícito (ID3, iTunes y FLAC).
-- **Reproductor completo**: cola, aleatorio, repetir, audio en segundo plano y controles en la pantalla de bloqueo y el Centro de control.
+- **Pantalla «Reproduciendo» estilo Apple Music**: portada a todo el ancho que se funde con el color dominante, barra de progreso gruesa, formato del audio (p. ej. «FLAC · 24-bit · 96 kHz»), botones grandes, AirPlay, cola, aleatorio y repetir. Audio en segundo plano y controles en la pantalla de bloqueo.
+- **Letras sincronizadas**: de las etiquetas del archivo (ID3 USLT/SYLT, iTunes ©lyr, FLAC LYRICS), de un archivo .lrc o de LRCLIB.net (se puede desactivar). La línea actual se resalta y se desplaza sola; toca una línea para saltar ahí.
 - **Exportar** una canción con los efectos aplicados (.m4a) y compartirla.
 - **Diseño Liquid Glass** en iOS 26 y materiales translúcidos en iOS 16–25. Modo oscuro, claro o del sistema.
 - **Idiomas**: español, inglés, portugués, francés, italiano, alemán y japonés (sigue el idioma del iPhone o elígelo en Ajustes).
@@ -50,7 +51,8 @@ La IPA no está firmada; se instala con **AltStore** o **SideStore**, que la fir
 - **10-band equalizer** with presets (Flat, Bass Boost, Vocals, Pop, Rock, Hip-Hop, Electronic…) plus a separate bass boost.
 - **Extra effects**: 8D audio, echo and "underwater".
 - **Library**: import MP3, M4A, WAV, AIFF and FLAC from Files (multi-select), or from another app via *Share › Open in Slowed*. Reads cover art, title, artist, album and the explicit flag (ID3, iTunes and FLAC tags).
-- **Full player**: queue, shuffle, repeat, background audio, lock screen and Control Center controls.
+- **Apple Music-style Now Playing**: edge-to-edge artwork fading into its dominant color, thick progress bar, audio format chip (e.g. "FLAC · 24-bit · 96 kHz"), big controls, AirPlay, queue, shuffle and repeat. Background audio and lock screen controls.
+- **Synced lyrics**: from file tags (ID3 USLT/SYLT, iTunes ©lyr, FLAC LYRICS), a sidecar .lrc file or LRCLIB.net (can be turned off). The current line is highlighted and auto-scrolls; tap a line to jump there.
 - **Export** a song with the effects baked in (.m4a) and share it.
 - **Liquid Glass design** on iOS 26, translucent materials on iOS 16–25. Dark, light or system appearance.
 - **Languages**: Spanish, English, Portuguese, French, Italian, German and Japanese (follows the iPhone language or pick one in Settings).

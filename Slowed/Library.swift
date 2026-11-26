@@ -274,6 +274,12 @@ final class Library: ObservableObject {
         }
         if let e = coordError ?? (innerError as NSError?) { throw e }
 
+        // Sidecar lyrics (song.lrc next to song.flac) are kept as-is.
+        if ext == "lrc" {
+            LyricsStore.shared.lrcImported()
+            return
+        }
+
         // Make sure we can actually play it; otherwise remove it and report.
         if !Library.audioExtensions.contains(dest.pathExtension.lowercased()) || (try? AVAudioFile(forReading: dest)) == nil {
             try? fm.removeItem(at: dest)

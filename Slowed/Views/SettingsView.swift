@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("appearance") private var appearance: Int = 0
     @AppStorage(AppLanguage.storageKey) private var language: String = "system"
+    @AppStorage(LyricsStore.onlineKey) private var lyricsOnline: Bool = true
     @EnvironmentObject var library: Library
 
     var body: some View {
@@ -55,6 +56,15 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Añadir música")
+                }
+
+                Section {
+                    Toggle("Letras de internet (LRCLIB)", isOn: $lyricsOnline)
+                    Label("O añade un archivo .lrc con el mismo nombre que la canción.", systemImage: "doc.text")
+                } header: {
+                    Text("Letras")
+                } footer: {
+                    Text("Si la canción no trae letra ni archivo .lrc, se busca en LRCLIB.net usando título, artista y duración.")
                 }
 
                 Section {

@@ -13,13 +13,25 @@ final class ImportPicker: NSObject, UIDocumentPickerDelegate {
             if let t = UTType(filenameExtension: ext), !types.contains(t) { types.append(t) }
         }
         if let flac = UTType("org.xiph.flac"), !types.contains(flac) { types.append(flac) }
+        for t in lyricsTypes where !types.contains(t) { types.append(t) }
+        return types
+    }
+
+    static var lyricsTypes: [UTType] {
+        var types: [UTType] = []
+        if let lrc = UTType(filenameExtension: "lrc") { types.append(lrc) }
+        types.append(.plainText)
         return types
     }
 
     func present(onPick: @escaping ([URL]) -> Void) {
+        present(types: ImportPicker.audioTypes, multiple: true, onPick: onPick)
+    }
+
+    func present(types: [UTType], multiple: Bool, onPick: @escaping ([URL]) -> Void) {
         self.onPick = onPick
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: ImportPicker.audioTypes, asCopy: true)
-        picker.allowsMultipleSelection = true
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        picker.allowsMultipleSelection = multiple
         picker.shouldShowFileExtensions = true
         picker.delegate = self
         picker.modalPresentationStyle = .formSheet
