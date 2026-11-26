@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import UIKit
+import SwiftUI
 
 enum AudioFormatInfo {
     /// e.g. "FLAC · 24-bit · 96 kHz", "MP3 · 44.1 kHz"
@@ -90,5 +91,49 @@ enum ArtworkColor {
         return color
     }
 
-    static func invalidate(_ id: UUID) { cache[id] = nil }
+    private static var accentCache: [UUID: UIColor] = [:]
+
+    /// Vivid accent taken from the artwork (e.g. pink for a pink cover); app accent when there is no art.
+    static func accent(for track: Track?) -> UIColor {
+        let fallback = UIColor(Theme.accent)
+        guard let track = track else { return fallback }
+        if let c = accentCache[track.id] { return c }
+        guard let img = Library.artworkImage(for: track), let cg = img.cgImage else { return fallback }
+        let side = 24
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        let ok: Bool = pixels.withUnsafeMutableBytes { buf -> Bool in
+            guard let ctx = CGContext(data: buf.baseAddress, width: side, height: side, bitsPerComponent: 8,
+                                      bytesPerRow: side * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: side, height: side))
+            return true
+        }
+        guard ok else { return fallback }
+        // Hue histogram weighted by saturation * brightness.
+        var bins = [Double](repeating: 0, count: 24)
+        var sums = [(Double, Double)](repeating: (0, 0), count: 24)
+        for i in stride(from: 0, to: pixels.count, by: 4) {
+            let c = UIColor(red: CGFloat(pixels[i]) / 255, green: CGFloat(pixels[i + 1]) / 255,
+                            blue: CGFloat(pixels[i + 2]) / 255, alpha: 1)
+            var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            c.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+            guard s > 0.2, b > 0.25 else { continue }
+            let w = Double(s * s * b)
+            let bin = min(Int(h * 24), 23)
+            bins[bin] += w
+            sums[bin].0 += Double(s) * w
+            sums[bin].1 += Double(b) * w
+        }
+        guard let best = bins.indices.max(by: { bins[$0] < bins[$1] }), bins[best] > 0.4 else {
+            accentCache[track.id] = fallback
+            return fallback
+        }
+        let hue = (Double(best) + 0.5) / 24.0
+        let sat = sums[best].0 / bins[best]
+        let color = UIColor(hue: CGFloat(hue), saturation: CGFloat(min(max(sat, 0.5), 0.75)), brightness: 0.95, alpha: 1)
+        accentCache[track.id] = color
+        return color
+    }
+
+    static func invalidate(_ id: UUID) { cache[id] = nil; accentCache[id] = nil }
 }

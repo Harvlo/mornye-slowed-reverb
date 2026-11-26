@@ -1,24 +1,60 @@
 import SwiftUI
 
+enum EffectsMode {
+    case all, slowed, equalizer
+}
+
 struct EffectsView: View {
     @EnvironmentObject var player: AudioPlayer
     @State private var confirmReset = false
+    var mode: EffectsMode = .all
+
+    private var title: LocalizedStringKey {
+        switch mode {
+        case .all: return "Efectos"
+        case .slowed: return "Slowed + Reverb"
+        case .equalizer: return "Ecualizador y efectos"
+        }
+    }
 
     var body: some View {
         Form {
-            slowedSection
-            eqSection
-            extrasSection
+            if mode != .equalizer { slowedSection }
+            if mode != .slowed {
+                eqSection
+                extrasSection
+            }
             Section {
                 Button(role: .destructive) { confirmReset = true } label: {
-                    Label("Restablecer todos los efectos", systemImage: "arrow.counterclockwise")
+                    Label(mode == .all ? LocalizedStringKey("Restablecer todos los efectos") : LocalizedStringKey("Restablecer"),
+                          systemImage: "arrow.counterclockwise")
                 }
             }
         }
-        .navigationTitle("Efectos")
+        .navigationTitle(title)
         .confirmationDialog("¿Restablecer todos los efectos?", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("Restablecer", role: .destructive) { player.resetEffects() }
+            Button("Restablecer", role: .destructive) { reset() }
             Button("Cancelar", role: .cancel) {}
+        }
+    }
+
+    private func reset() {
+        let d = EffectSettings()
+        switch mode {
+        case .all:
+            player.resetEffects()
+        case .slowed:
+            var s = player.settings
+            s.slowedOn = d.slowedOn; s.speed = d.speed; s.keepPitch = d.keepPitch
+            s.pitchSemitones = d.pitchSemitones; s.reverbMix = d.reverbMix; s.reverbRoom = d.reverbRoom
+            player.settings = s
+        case .equalizer:
+            var s = player.settings
+            s.eqOn = d.eqOn; s.eqGains = d.eqGains; s.eqPresetName = d.eqPresetName; s.bassBoost = d.bassBoost
+            s.eightDOn = d.eightDOn; s.eightDCycle = d.eightDCycle
+            s.echoOn = d.echoOn; s.echoTime = d.echoTime; s.echoFeedback = d.echoFeedback; s.echoMix = d.echoMix
+            s.underwaterOn = d.underwaterOn; s.underwaterCutoff = d.underwaterCutoff
+            player.settings = s
         }
     }
 

@@ -141,3 +141,7 @@
 "Si la canción no trae letra ni archivo .lrc, se busca en LRCLIB.net usando título, artista y duración." = "Si la canción no trae letra ni archivo .lrc, se busca en LRCLIB.net usando título, artista y duración.";
 "Sin letra para esta canción" = "Sin letra para esta canción";
 "Volver a buscar" = "Volver a buscar";
+"Ajustar Slowed + Reverb" = "Ajustar Slowed + Reverb";
+"Ecualizador y efectos" = "Ecualizador y efectos";
+"Anterior" = "Anterior";
+"Pausa" = "Pausa";

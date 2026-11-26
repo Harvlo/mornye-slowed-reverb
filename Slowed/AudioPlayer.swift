@@ -280,6 +280,13 @@ final class AudioPlayer: ObservableObject {
         generation += 1
         player.stop()
         file = f
+        // Ask the hardware for the file's native rate (e.g. 96/192 kHz on a capable DAC) to avoid resampling.
+        let session = AVAudioSession.sharedInstance()
+        let nativeRate = f.fileFormat.sampleRate
+        if nativeRate > 0, abs(session.preferredSampleRate - nativeRate) > 1 {
+            try? session.setPreferredSampleRate(nativeRate)
+        }
+        // The whole effect chain runs at the file's own processing format (float32, native rate/channels).
         ensureGraph(for: f.processingFormat)
         duration = Double(f.length) / f.processingFormat.sampleRate
         currentTime = 0

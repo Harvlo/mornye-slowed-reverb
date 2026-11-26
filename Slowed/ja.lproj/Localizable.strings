@@ -141,3 +141,7 @@
 "Si la canción no trae letra ni archivo .lrc, se busca en LRCLIB.net usando título, artista y duración." = "曲に歌詞や.lrcファイルがない場合、タイトル・アーティスト・長さを使ってLRCLIB.netで検索します。";
 "Sin letra para esta canción" = "この曲の歌詞はありません";
 "Volver a buscar" = "もう一度検索";
+"Ajustar Slowed + Reverb" = "Slowed + Reverbを調整";
+"Ecualizador y efectos" = "イコライザとエフェクト";
+"Anterior" = "前へ";
+"Pausa" = "一時停止";

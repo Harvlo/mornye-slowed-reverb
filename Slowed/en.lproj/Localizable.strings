@@ -141,3 +141,7 @@
 "Si la canción no trae letra ni archivo .lrc, se busca en LRCLIB.net usando título, artista y duración." = "If a song has no embedded lyrics or .lrc file, they're looked up on LRCLIB.net using the title, artist and duration.";
 "Sin letra para esta canción" = "No lyrics for this song";
 "Volver a buscar" = "Search again";
+"Ajustar Slowed + Reverb" = "Adjust Slowed + Reverb";
+"Ecualizador y efectos" = "Equalizer & effects";
+"Anterior" = "Previous";
+"Pausa" = "Pause";

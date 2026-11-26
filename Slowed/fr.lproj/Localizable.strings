@@ -141,3 +141,7 @@
 "Si la canción no trae letra ni archivo .lrc, se busca en LRCLIB.net usando título, artista y duración." = "Si un morceau n'a ni paroles intégrées ni fichier .lrc, elles sont recherchées sur LRCLIB.net à partir du titre, de l'artiste et de la durée.";
 "Sin letra para esta canción" = "Pas de paroles pour ce morceau";
 "Volver a buscar" = "Rechercher à nouveau";
+"Ajustar Slowed + Reverb" = "Régler Slowed + Reverb";
+"Ecualizador y efectos" = "Égaliseur et effets";
+"Anterior" = "Précédent";
+"Pausa" = "Pause";

@@ -7,28 +7,30 @@ struct PlayerView: View {
     @State private var scrubbing = false
     @State private var scrubValue: Double = 0
     @State private var showQueue = false
-    @State private var showEffects = false
+    @State private var showSlowed = false
+    @State private var showEQ = false
     @State private var showLyrics = false
 
     var body: some View {
         let track = player.currentTrack
         let bg = Color(ArtworkColor.background(for: track))
+        let accent = Color(ArtworkColor.accent(for: track))
         GeometryReader { geo in
             ZStack(alignment: .top) {
                 bg.ignoresSafeArea()
-                artwork(track, width: geo.size.width, bg: bg)
+                artwork(track, width: geo.size.width, height: (geo.size.height + geo.safeAreaInsets.top) * 0.58, bg: bg)
                     .ignoresSafeArea(edges: .top)
                 VStack(spacing: 0) {
                     topBar
                     Spacer(minLength: 0)
                     info(track)
-                    progress
+                    progress(accent: accent)
                         .padding(.top, 18)
-                    controls
-                        .padding(.top, 22)
-                    bottomRow
+                    controls(accent: accent)
+                        .padding(.top, 24)
+                    bottomRow(accent: accent)
                         .padding(.top, 26)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
                 }
                 .padding(.horizontal, 24)
             }
@@ -39,16 +41,11 @@ struct PlayerView: View {
         .sheet(isPresented: $showQueue) {
             QueueView().environmentObject(player)
         }
-        .sheet(isPresented: $showEffects) {
-            NavigationStack {
-                EffectsView()
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Listo") { showEffects = false }
-                        }
-                    }
-            }
-            .environmentObject(player)
+        .sheet(isPresented: $showSlowed) {
+            effectsSheet(.slowed) { showSlowed = false }
+        }
+        .sheet(isPresented: $showEQ) {
+            effectsSheet(.equalizer) { showEQ = false }
         }
         .fullScreenCover(isPresented: $showLyrics) {
             LyricsView()
@@ -56,16 +53,31 @@ struct PlayerView: View {
         }
     }
 
+    private func effectsSheet(_ mode: EffectsMode, close: @escaping () -> Void) -> some View {
+        NavigationStack {
+            EffectsView(mode: mode)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Listo") { close() }
+                    }
+                }
+        }
+        .environmentObject(player)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
     // MARK: Artwork
 
     @ViewBuilder
-    private func artwork(_ track: Track?, width: CGFloat, bg: Color) -> some View {
+    private func artwork(_ track: Track?, width: CGFloat, height: CGFloat, bg: Color) -> some View {
         ZStack(alignment: .bottom) {
             if let t = track, let img = Library.artworkImage(for: t) {
                 Image(uiImage: img)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: width, height: width)
+                    .frame(width: width, height: height)
                     .clipped()
             } else {
                 ZStack {
@@ -74,47 +86,45 @@ struct PlayerView: View {
                         .font(.system(size: width * 0.3, weight: .semibold))
                         .foregroundColor(.white.opacity(0.85))
                 }
-                .frame(width: width, height: width)
+                .frame(width: width, height: height)
             }
-            LinearGradient(colors: [bg.opacity(0), bg.opacity(0.65), bg],
+            LinearGradient(colors: [bg.opacity(0), bg.opacity(0.7), bg],
                            startPoint: .top, endPoint: .bottom)
-                .frame(height: width * 0.45)
+                .frame(height: height * 0.42)
         }
         .overlay(alignment: .top) {
             LinearGradient(colors: [Color.black.opacity(0.35), .clear], startPoint: .top, endPoint: .bottom)
                 .frame(height: 120)
         }
-        .frame(width: width, height: width)
+        .frame(width: width, height: height)
     }
 
     // MARK: Top bar
 
     private var topBar: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 17, weight: .bold))
-                    .frame(width: 40, height: 40)
-                    .glassCard(shape: .circle, tint: isGlassAvailable ? nil : Color.black.opacity(0.25), interactive: true)
-            }
-            .accessibilityLabel(Text("Cerrar"))
-            Spacer()
+        ZStack {
             Text("Reproduciendo")
                 .font(.headline)
-            Spacer()
-            HStack(spacing: 10) {
+            HStack(spacing: 4) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel(Text("Cerrar"))
+                Spacer()
                 Button { showQueue = true } label: {
                     Image(systemName: "list.bullet")
-                        .font(.system(size: 16, weight: .bold))
-                        .frame(width: 40, height: 40)
-                        .glassCard(shape: .circle, tint: isGlassAvailable ? nil : Color.black.opacity(0.25), interactive: true)
+                        .font(.system(size: 19, weight: .semibold))
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel(Text("Cola"))
                 moreMenu
             }
         }
         .buttonStyle(.plain)
-        .padding(.top, 6)
+        .shadow(color: .black.opacity(0.35), radius: 6)
+        .padding(.top, 4)
     }
 
     private var moreMenu: some View {
@@ -125,15 +135,11 @@ struct PlayerView: View {
                 Label(player.settings.slowedOn ? LocalizedStringKey("Desactivar Slowed + Reverb") : LocalizedStringKey("Activar Slowed + Reverb"),
                       systemImage: "tortoise")
             }
-            Menu {
-                ForEach(EffectSettings.speedPresets, id: \.self) { name in
-                    Button(LocalizedStringKey(name)) { player.settings.applySpeedPreset(name) }
-                }
-            } label: {
-                Label("Presets de velocidad", systemImage: "speedometer")
+            Button { showSlowed = true } label: {
+                Label("Ajustar Slowed + Reverb", systemImage: "tortoise.fill")
             }
-            Button { showEffects = true } label: {
-                Label("Efectos y ecualizador", systemImage: "slider.horizontal.3")
+            Button { showEQ = true } label: {
+                Label("Ecualizador y efectos", systemImage: "slider.vertical.3")
             }
             Divider()
             Button { showLyrics = true } label: {
@@ -144,10 +150,9 @@ struct PlayerView: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 19, weight: .bold))
                 .rotationEffect(.degrees(90))
-                .frame(width: 40, height: 40)
-                .glassCard(shape: .circle, tint: isGlassAvailable ? nil : Color.black.opacity(0.25), interactive: true)
+                .frame(width: 44, height: 44)
         }
         .accessibilityLabel(Text("Más"))
     }
@@ -156,44 +161,36 @@ struct PlayerView: View {
 
     @ViewBuilder
     private func info(_ track: Track?) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
-                if let track = track {
-                    HStack(spacing: 8) {
-                        Text(track.title)
-                            .font(.system(size: 26, weight: .bold))
-                            .lineLimit(1)
-                        if track.explicit {
-                            Image(systemName: "e.square.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(.white.opacity(0.6))
-                        }
-                    }
-                    Text(track.artist)
-                        .font(.system(size: 19, weight: .regular))
-                        .foregroundColor(.white.opacity(0.6))
+        VStack(alignment: .leading, spacing: 4) {
+            if let track = track {
+                HStack(spacing: 8) {
+                    Text(track.title)
+                        .font(.system(size: 28, weight: .bold))
                         .lineLimit(1)
-                } else {
-                    Text("Nada en reproducción").font(.system(size: 26, weight: .bold))
-                    Text("Elige una canción de tu biblioteca").foregroundColor(.white.opacity(0.6))
+                    if track.explicit {
+                        Image(systemName: "e.square.fill")
+                            .font(.system(size: 19))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
                 }
-            }
-            Spacer(minLength: 0)
-            if player.settings.slowedOn {
-                Text(String(format: "%.2fx", player.settings.speed))
-                    .font(.caption.weight(.heavy).monospacedDigit())
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .glassCard(shape: .capsule, tint: Theme.accent.opacity(isGlassAvailable ? 0.6 : 0.9))
+                Text(track.artist)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundColor(.white.opacity(0.58))
+                    .lineLimit(1)
+            } else {
+                Text("Nada en reproducción").font(.system(size: 28, weight: .bold))
+                Text("Elige una canción de tu biblioteca").foregroundColor(.white.opacity(0.58))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Progress
 
-    private var progress: some View {
+    private func progress(accent: Color) -> some View {
         let shown = scrubbing ? scrubValue : player.currentTime
-        return VStack(spacing: 8) {
-            ThickSlider(value: shown, maxValue: max(player.duration, 0.1), active: scrubbing) { editing, value in
+        return VStack(spacing: 10) {
+            ThickSlider(value: shown, maxValue: max(player.duration, 0.1), active: scrubbing, accent: accent) { editing, value in
                 scrubValue = value
                 if editing {
                     scrubbing = true
@@ -208,14 +205,18 @@ struct PlayerView: View {
                     Spacer()
                     Text(formatTime(player.duration))
                 }
-                .font(.caption.monospacedDigit().weight(.semibold))
+                .font(.footnote.monospacedDigit().weight(.semibold))
                 .foregroundColor(.white.opacity(0.6))
                 if !player.formatInfo.isEmpty {
-                    Text(verbatim: player.formatInfo)
-                        .font(.caption2.weight(.bold))
-                        .foregroundColor(.white.opacity(0.85))
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .glassCard(shape: .capsule, tint: isGlassAvailable ? nil : Color.white.opacity(0.16))
+                    HStack(spacing: 5) {
+                        Image(systemName: "waveform")
+                            .font(.caption2.weight(.bold))
+                        Text(verbatim: player.formatInfo)
+                            .font(.caption2.weight(.bold))
+                    }
+                    .foregroundColor(.white.opacity(0.85))
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .glassCard(shape: .capsule, tint: isGlassAvailable ? nil : Color.white.opacity(0.14))
                 }
             }
         }
@@ -223,30 +224,39 @@ struct PlayerView: View {
 
     // MARK: Controls
 
-    private var controls: some View {
-        GlassGroup(spacing: 14) {
-            HStack(spacing: 14) {
+    private func controls(accent: Color) -> some View {
+        let muted = isGlassAvailable ? accent.opacity(0.18) : accent.opacity(0.16)
+        return GlassGroup(spacing: 12) {
+            HStack(spacing: 12) {
                 Button { player.previous() } label: {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 26, weight: .bold))
-                        .frame(width: 76, height: 64)
-                        .glassCard(cornerRadius: 22, tint: isGlassAvailable ? nil : Color.white.opacity(0.14), interactive: true)
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(width: 84, height: 66)
+                        .background(isGlassAvailable ? Color.clear : Color.white.opacity(0.08))
+                        .glassCard(cornerRadius: 20, tint: muted, interactive: true)
                 }
+                .accessibilityLabel(Text("Anterior"))
                 Button { player.togglePlayPause() } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: 32, weight: .heavy))
+                        .foregroundColor(Color.black.opacity(0.85))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 64)
-                        .background(isGlassAvailable ? Color.clear : Theme.accent)
+                        .frame(height: 66)
+                        .background(isGlassAvailable ? Color.clear : accent)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                        .glassCard(cornerRadius: 22, tint: Theme.accent, interactive: true, fallback: false)
+                        .glassCard(cornerRadius: 22, tint: accent, interactive: true, fallback: false)
                 }
+                .accessibilityLabel(Text(player.isPlaying ? LocalizedStringKey("Pausa") : LocalizedStringKey("Reproducir")))
                 Button { player.next() } label: {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 26, weight: .bold))
-                        .frame(width: 76, height: 64)
-                        .glassCard(cornerRadius: 22, tint: isGlassAvailable ? nil : Color.white.opacity(0.14), interactive: true)
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(width: 84, height: 66)
+                        .background(isGlassAvailable ? Color.clear : Color.white.opacity(0.08))
+                        .glassCard(cornerRadius: 20, tint: muted, interactive: true)
                 }
+                .accessibilityLabel(Text("Siguiente"))
             }
             .buttonStyle(.plain)
         }
@@ -254,70 +264,90 @@ struct PlayerView: View {
 
     // MARK: Bottom row
 
-    private var bottomRow: some View {
-        HStack {
-            Button { showLyrics = true } label: {
-                Image(systemName: "quote.bubble")
-                    .font(.system(size: 19, weight: .semibold))
-                    .frame(width: 46, height: 46)
-                    .glassCard(shape: .circle, tint: isGlassAvailable ? nil : Color.white.opacity(0.12), interactive: true)
+    private func smallButton(_ systemName: String, on: Bool = false, accent: Color) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundColor(on ? accent : .white.opacity(0.85))
+            .frame(width: 46, height: 42)
+            .background(isGlassAvailable ? Color.clear : Color.white.opacity(0.06))
+            .glassCard(cornerRadius: 12, tint: isGlassAvailable ? nil : Color.white.opacity(0.1), interactive: true)
+    }
+
+    private func bottomRow(accent: Color) -> some View {
+        HStack(spacing: 0) {
+            Button { showLyrics = true } label: { smallButton("quote.bubble", accent: accent) }
+                .accessibilityLabel(Text("Letra"))
+            Spacer(minLength: 6)
+            Button { showSlowed = true } label: {
+                smallButton(player.settings.slowedOn ? "tortoise.fill" : "tortoise", on: player.settings.slowedOn, accent: accent)
+                    .overlay(alignment: .topTrailing) {
+                        if player.settings.slowedOn {
+                            Circle().fill(accent).frame(width: 7, height: 7).offset(x: -5, y: 5)
+                        }
+                    }
             }
-            .accessibilityLabel(Text("Letra"))
-            Spacer()
+            .accessibilityLabel(Text("Slowed + Reverb"))
+            Spacer(minLength: 6)
             HStack(spacing: 0) {
                 Button { player.toggleShuffle() } label: {
                     Image(systemName: "shuffle")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(player.shuffle ? Theme.accent : .white.opacity(0.85))
-                        .frame(width: 54, height: 46)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(player.shuffle ? accent : .white.opacity(0.85))
+                        .frame(width: 48, height: 42)
                 }
                 .accessibilityLabel(Text("Aleatorio"))
-                Rectangle().fill(Color.white.opacity(0.2)).frame(width: 1, height: 22)
+                Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 20)
                 Button { player.cycleRepeat() } label: {
                     Image(systemName: player.repeatMode == .one ? "repeat.1" : "repeat")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(player.repeatMode == .off ? .white.opacity(0.85) : Theme.accent)
-                        .frame(width: 54, height: 46)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(player.repeatMode == .off ? .white.opacity(0.85) : accent)
+                        .frame(width: 48, height: 42)
                 }
                 .accessibilityLabel(Text("Repetir"))
             }
-            .glassCard(shape: .capsule, tint: isGlassAvailable ? nil : Color.white.opacity(0.12), interactive: true)
-            Spacer()
-            Button { showEffects = true } label: {
-                Image(systemName: player.settings.slowedOn ? "tortoise.fill" : "slider.horizontal.3")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(player.settings.slowedOn ? Theme.accent : .white)
-                    .frame(width: 46, height: 46)
-                    .glassCard(shape: .circle, tint: isGlassAvailable ? nil : Color.white.opacity(0.12), interactive: true)
+            .background(isGlassAvailable ? Color.clear : Color.white.opacity(0.06))
+            .glassCard(cornerRadius: 12, tint: isGlassAvailable ? nil : Color.white.opacity(0.1), interactive: true)
+            Spacer(minLength: 6)
+            Button { showEQ = true } label: {
+                smallButton("slider.vertical.3", on: player.settings.eqOn || player.settings.bassBoost > 0 || player.settings.eightDOn || player.settings.echoOn || player.settings.underwaterOn, accent: accent)
             }
-            .accessibilityLabel(Text("Efectos"))
-            Spacer()
+            .accessibilityLabel(Text("Ecualizador y efectos"))
+            Spacer(minLength: 6)
             AirPlayButton()
-                .frame(width: 46, height: 46)
-                .glassCard(shape: .circle, tint: isGlassAvailable ? nil : Color.white.opacity(0.12), interactive: true)
+                .frame(width: 46, height: 42)
+                .background(isGlassAvailable ? Color.clear : Color.white.opacity(0.06))
+                .glassCard(cornerRadius: 12, tint: isGlassAvailable ? nil : Color.white.opacity(0.1), interactive: true)
                 .accessibilityLabel(Text("AirPlay"))
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Thick rounded progress bar with drag-to-seek.
+/// Thick rounded progress bar with a vertical bar thumb and drag-to-seek.
 struct ThickSlider: View {
     let value: Double
     let maxValue: Double
     let active: Bool
+    var accent: Color = Theme.accent
     let onChange: (Bool, Double) -> Void
 
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let frac = maxValue > 0 ? min(max(value / maxValue, 0), 1) : 0
+            let barHeight: CGFloat = active ? 14 : 10
+            let x = w * CGFloat(frac)
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.22))
-                Capsule().fill(Theme.accent)
-                    .frame(width: max(w * CGFloat(frac), active ? 12 : 8))
+                Capsule().fill(Color.white.opacity(0.18))
+                    .frame(height: barHeight)
+                Capsule().fill(accent)
+                    .frame(width: max(x, barHeight), height: barHeight)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(Color.white)
+                    .frame(width: 4, height: barHeight + 12)
+                    .shadow(color: .black.opacity(0.3), radius: 2)
+                    .offset(x: min(max(x - 2, 0), w - 4))
             }
-            .frame(height: active ? 14 : 9)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
             .gesture(
@@ -333,7 +363,7 @@ struct ThickSlider: View {
             )
             .animation(.easeOut(duration: 0.15), value: active)
         }
-        .frame(height: 24)
+        .frame(height: 28)
     }
 }
 

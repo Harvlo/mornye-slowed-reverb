@@ -146,6 +146,13 @@ T.update({
 "Sin letra para esta canción": ["No lyrics for this song","Sem letra para esta música","Pas de paroles pour ce morceau","Nessun testo per questo brano","Kein Songtext für diesen Song","この曲の歌詞はありません"],
 "Volver a buscar": ["Search again","Buscar novamente","Rechercher à nouveau","Cerca di nuovo","Erneut suchen","もう一度検索"],
 })
+
+T.update({
+"Ajustar Slowed + Reverb": ["Adjust Slowed + Reverb","Ajustar Slowed + Reverb","Régler Slowed + Reverb","Regola Slowed + Reverb","Slowed + Reverb anpassen","Slowed + Reverbを調整"],
+"Ecualizador y efectos": ["Equalizer & effects","Equalizador e efeitos","Égaliseur et effets","Equalizzatore ed effetti","Equalizer & Effekte","イコライザとエフェクト"],
+"Anterior": ["Previous","Anterior","Précédent","Precedente","Zurück","前へ"],
+"Pausa": ["Pause","Pausar","Pause","Pausa","Pause","一時停止"],
+})
 LANGS=["en","pt","fr","it","de","ja"]
 import os
 def esc(x): return x.replace('\\','\\\\').replace('"','\\"')
