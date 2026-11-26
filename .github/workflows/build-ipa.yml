@@ -3,6 +3,11 @@ name: Build unsigned IPA
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+      - "altstore/**"
+      - "LICENSE"
   workflow_dispatch:
 
 permissions:
@@ -56,6 +61,8 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             ONLY_ACTIVE_ARCH=NO \
+            MARKETING_VERSION="1.0.${{ github.run_number }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             build | tee xcodebuild.log | grep -E "error:|warning: unre|\*\* BUILD" || true
           test -d build/Release-iphoneos/Slowed.app
 
@@ -81,10 +88,29 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Slowed 1.0 (build ${{ github.run_number }})
+          name: Slowed 1.0.${{ github.run_number }}
           make_latest: true
           body: |
             IPA sin firmar para instalar con AltStore / SideStore.
             Commit: ${{ github.sha }}
             Compilado con ${{ env.XCODE_USED }} (runner macos-15-intel).
           files: Slowed.ipa
+
+      - name: Update AltStore / SideStore source
+        env:
+          NOTES: ${{ github.event.head_commit.message }}
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/Slowed.ipa"
+          SIZE=$(stat -f%z Slowed.ipa)
+          python3 scripts/update_source.py --version "$VERSION" --build "${{ github.run_number }}" \
+            --url "$URL" --size "$SIZE" --notes "$(printf '%s' "$NOTES" | head -1)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add altstore/apps.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "altstore: v${VERSION} [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 5
+          done

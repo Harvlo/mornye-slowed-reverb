@@ -1,0 +1,37 @@
+{
+  "name": "Slowed",
+  "identifier": "com.harvlo.slowed.source",
+  "subtitle": "Slowed + Reverb music player for iPhone",
+  "description": "Official source for Slowed, a free and open-source iPhone music player with one-tap Slowed + Reverb, nightcore, a 10-band EQ, synced lyrics and hi-res FLAC playback.",
+  "iconURL": "https://raw.githubusercontent.com/Harvlo/mornye-slowed-reverb/main/Slowed/Assets.xcassets/AppIcon.appiconset/icon.png",
+  "website": "https://github.com/Harvlo/mornye-slowed-reverb",
+  "tintColor": "#A36BFF",
+  "featuredApps": [
+    "com.harvlo.slowedplayer"
+  ],
+  "apps": [
+    {
+      "name": "Slowed",
+      "bundleIdentifier": "com.harvlo.slowedplayer",
+      "developerName": "Harvlo",
+      "subtitle": "Slowed + Reverb, EQ, synced lyrics & hi-res FLAC",
+      "localizedDescription": "Turn any song into slowed + reverb or nightcore with one tap, and play your own music library offline.\n\n• Slowed + Reverb: 0.5x–1.5x speed with vinyl-style pitch (or keep pitch), extra pitch, reverb amount and 8 room types. Presets: Slowed, Super slowed, Daycore, Nightcore, Reverb only.\n• 10-band equalizer with presets and bass boost, plus 8D audio, echo and underwater effects.\n• Apple Music-style Now Playing with artwork colors, AirPlay and the real audio format (e.g. FLAC · 24-bit · 96 kHz).\n• Synced lyrics from file tags, .lrc files or LRCLIB.net — tap a line to jump.\n• Import MP3, M4A, WAV, AIFF and FLAC from Files; cover art and tags are read automatically.\n• Background playback, lock screen controls, export songs with effects.\n• Liquid Glass design on iOS 26, 7 languages.\n\nNo ads, no account, free and open source (MIT).",
+      "iconURL": "https://raw.githubusercontent.com/Harvlo/mornye-slowed-reverb/main/Slowed/Assets.xcassets/AppIcon.appiconset/icon.png",
+      "tintColor": "#A36BFF",
+      "category": "entertainment",
+      "screenshots": [],
+      "versions": [],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      },
+      "permissions": [
+        {
+          "type": "background-audio",
+          "usageDescription": "Keeps your music playing in the background and on the lock screen."
+        }
+      ]
+    }
+  ],
+  "news": []
+}
