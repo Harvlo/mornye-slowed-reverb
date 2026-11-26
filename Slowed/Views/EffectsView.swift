@@ -40,12 +40,11 @@ struct EffectsView: View {
                         Button {
                             player.settings.applySpeedPreset(name)
                         } label: {
-                            Text(name)
+                            Text(LocalizedStringKey(name))
                                 .font(.subheadline.weight(.semibold))
                                 .padding(.horizontal, 12).padding(.vertical, 7)
-                                .background(Theme.accent.opacity(0.18))
                                 .foregroundColor(Theme.accent)
-                                .clipShape(Capsule())
+                                .glassCard(shape: .capsule, tint: isGlassAvailable ? nil : Theme.accent.opacity(0.2), interactive: true)
                         }
                         .buttonStyle(.plain)
                     }
@@ -62,7 +61,7 @@ struct EffectsView: View {
                         format: { "\(Int($0))%" })
             Picker("Sala", selection: $player.settings.reverbRoom) {
                 ForEach(0..<ReverbRoom.all.count, id: \.self) { i in
-                    Text(ReverbRoom.all[i].name).tag(i)
+                    Text(LocalizedStringKey(ReverbRoom.all[i].name)).tag(i)
                 }
             }
         } header: {
@@ -90,7 +89,7 @@ struct EffectsView: View {
                 }
             )) {
                 ForEach(EQPreset.all.map { $0.name } + ["Personalizado"], id: \.self) { name in
-                    Text(name).tag(name)
+                    Text(LocalizedStringKey(name)).tag(name)
                 }
             }
             EQBandsView()
@@ -182,7 +181,7 @@ struct EQBandsView: View {
 }
 
 struct ValueSlider: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var value: Float
     let range: ClosedRange<Float>
     let step: Float

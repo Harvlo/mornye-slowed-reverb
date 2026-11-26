@@ -4,6 +4,18 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>es</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>es</string>
+		<string>en</string>
+		<string>pt</string>
+		<string>fr</string>
+		<string>it</string>
+		<string>de</string>
+		<string>ja</string>
+	</array>
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
 	<key>CFBundleDisplayName</key>
 	<string>Slowed</string>
 	<key>CFBundleExecutable</key>

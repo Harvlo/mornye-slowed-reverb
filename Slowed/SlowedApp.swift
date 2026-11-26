@@ -7,6 +7,7 @@ struct SlowedApp: App {
     @StateObject private var library = Library.shared
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearance: Int = 0
+    @AppStorage(AppLanguage.storageKey) private var language: String = "system"
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +15,8 @@ struct SlowedApp: App {
                 .environmentObject(player)
                 .environmentObject(library)
                 .tint(Theme.accent)
+                .environment(\.locale, language == "system" ? Locale.autoupdatingCurrent : Locale(identifier: language))
+                .id(language)
                 .onAppear { applyAppearance(appearance) }
                 .onChange(of: appearance) { value in applyAppearance(value) }
                 .onOpenURL { url in

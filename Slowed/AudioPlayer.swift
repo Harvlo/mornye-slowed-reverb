@@ -158,7 +158,7 @@ final class AudioPlayer: ObservableObject {
             do {
                 try engine.start()
             } catch {
-                errorMessage = "No se pudo iniciar el audio: \(error.localizedDescription)"
+                errorMessage = L("No se pudo iniciar el audio: %@", error.localizedDescription)
                 return false
             }
         }
@@ -273,7 +273,7 @@ final class AudioPlayer: ObservableObject {
         do {
             f = try AVAudioFile(forReading: url)
         } catch {
-            errorMessage = "No se pudo abrir “\(track.title)”"
+            errorMessage = L("No se pudo abrir «%@»", track.title)
             return
         }
         generation += 1
@@ -485,6 +485,7 @@ final class AudioPlayer: ObservableObject {
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: settings.slowedOn ? "\(track.title) (slowed)" : track.title,
             MPMediaItemPropertyArtist: track.artist,
+            MPMediaItemPropertyAlbumTitle: track.album,
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? speed : 0.0,

@@ -51,7 +51,7 @@ enum Exporter {
         let tailSeconds: Double = (settings.slowedOn && settings.reverbMix > 0) || settings.echoOn ? 3.0 : 0.3
         let total = AVAudioFramePosition(Double(source.length) / speed + tailSeconds * format.sampleRate)
 
-        var suffix = settings.slowedOn ? (settings.effectiveSpeed > 1 ? " (nightcore)" : " (slowed + reverb)") : " (efectos)"
+        var suffix = settings.slowedOn ? (settings.effectiveSpeed > 1 ? " (nightcore)" : " (slowed + reverb)") : " (" + L("efectos") + ")"
         if settings.slowedOn && settings.effectiveSpeed == 1 { suffix = " (reverb)" }
         let safeTitle = track.title.replacingOccurrences(of: "/", with: "-")
         let useAAC = format.sampleRate <= 48000
@@ -77,7 +77,7 @@ enum Exporter {
                                       commonFormat: format.commonFormat, interleaved: format.isInterleaved)
             guard let buffer = AVAudioPCMBuffer(pcmFormat: engine.manualRenderingFormat,
                                                 frameCapacity: engine.manualRenderingMaximumFrameCount) else {
-                throw ExportError.failed("No se pudo crear el búfer de audio")
+                throw ExportError.failed(L("No se pudo crear el búfer de audio"))
             }
             var stalls = 0
             var lastReported = -1
@@ -91,11 +91,11 @@ enum Exporter {
                     stalls = 0
                 case .insufficientDataFromInputNode, .cannotDoInCurrentContext:
                     stalls += 1
-                    if stalls > 1000 { throw ExportError.failed("El render se detuvo") }
+                    if stalls > 1000 { throw ExportError.failed(L("El render se detuvo")) }
                 case .error:
-                    throw ExportError.failed("Error al procesar el audio")
+                    throw ExportError.failed(L("Error al procesar el audio"))
                 @unknown default:
-                    throw ExportError.failed("Error desconocido al procesar")
+                    throw ExportError.failed(L("Error desconocido al procesar"))
                 }
                 let pct = Int(Double(engine.manualRenderingSampleTime) / Double(total) * 100)
                 if pct != lastReported {

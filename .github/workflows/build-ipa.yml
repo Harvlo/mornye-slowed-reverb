@@ -15,15 +15,25 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15-intel
-    env:
-      XCODE_APP: /Applications/Xcode_16.4.app
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Select Xcode (prefer 26.x for Liquid Glass, fall back to 16.4)
         run: |
+          XCODE_APP=""
+          for v in 26.3 26.2 26.1.1 26.0.1; do
+            if [ -d "/Applications/Xcode_${v}.app" ]; then XCODE_APP="/Applications/Xcode_${v}.app"; break; fi
+          done
+          if [ -z "$XCODE_APP" ]; then XCODE_APP="/Applications/Xcode_16.4.app"; fi
+          echo "Using $XCODE_APP"
           sudo xcode-select -s "$XCODE_APP"
           xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos || true
+          echo "XCODE_USED=$(xcodebuild -version | head -1)" >> "$GITHUB_ENV"
+
+      - name: Lint localization files
+        run: |
+          for f in Slowed/*.lproj/Localizable.strings; do plutil -lint "$f"; done
 
       - name: Install XcodeGen
         run: |
@@ -76,4 +86,5 @@ jobs:
           body: |
             IPA sin firmar para instalar con AltStore / SideStore.
             Commit: ${{ github.sha }}
+            Compilado con ${{ env.XCODE_USED }} (runner macos-15-intel).
           files: Slowed.ipa

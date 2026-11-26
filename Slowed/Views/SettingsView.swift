@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("appearance") private var appearance: Int = 0
+    @AppStorage(AppLanguage.storageKey) private var language: String = "system"
     @EnvironmentObject var library: Library
 
     var body: some View {
@@ -21,12 +22,34 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker("Idioma", selection: Binding(
+                        get: { language },
+                        set: { code in
+                            AppLanguage.set(code)
+                            language = code
+                        }
+                    )) {
+                        ForEach(AppLanguage.options, id: \.code) { option in
+                            if option.code == "system" {
+                                Text("Sistema").tag(option.code)
+                            } else {
+                                Text(verbatim: option.name).tag(option.code)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Idioma")
+                } footer: {
+                    Text("«Sistema» usa el idioma del iPhone. Algunos textos del sistema cambian al reiniciar la app.")
+                }
+
+                Section {
                     Label("Pulsa + en la Biblioteca para importar desde Archivos.", systemImage: "plus.circle")
                     Label("O copia canciones en Archivos › En mi iPhone › Slowed.", systemImage: "folder")
                     Label("Desde otra app: Compartir › Abrir en Slowed.", systemImage: "square.and.arrow.up")
                     Button {
                         library.refresh()
-                        library.lastMessage = "Biblioteca actualizada"
+                        library.lastMessage = L("Biblioteca actualizada")
                     } label: {
                         Label("Buscar canciones nuevas", systemImage: "arrow.clockwise")
                     }

@@ -15,9 +15,41 @@ struct Track: Identifiable, Codable, Equatable, Hashable {
     var fileName: String
     var title: String
     var artist: String
+    var album: String = ""
+    var explicit: Bool = false
     var duration: Double
     var hasArtwork: Bool = false
     var addedAt: Date = Date()
+    var metaVersion: Int = Track.currentMetaVersion
+
+    static let currentMetaVersion = 2
+
+    init(fileName: String, title: String, artist: String, album: String = "", explicit: Bool = false, duration: Double) {
+        self.fileName = fileName
+        self.title = title
+        self.artist = artist
+        self.album = album
+        self.explicit = explicit
+        self.duration = duration
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, fileName, title, artist, album, explicit, duration, hasArtwork, addedAt, metaVersion
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        fileName = try c.decode(String.self, forKey: .fileName)
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? fileName
+        artist = try c.decodeIfPresent(String.self, forKey: .artist) ?? ""
+        album = try c.decodeIfPresent(String.self, forKey: .album) ?? ""
+        explicit = try c.decodeIfPresent(Bool.self, forKey: .explicit) ?? false
+        duration = try c.decodeIfPresent(Double.self, forKey: .duration) ?? 0
+        hasArtwork = try c.decodeIfPresent(Bool.self, forKey: .hasArtwork) ?? false
+        addedAt = try c.decodeIfPresent(Date.self, forKey: .addedAt) ?? Date()
+        metaVersion = try c.decodeIfPresent(Int.self, forKey: .metaVersion) ?? 1
+    }
 }
 
 enum RepeatMode: Int, Codable {

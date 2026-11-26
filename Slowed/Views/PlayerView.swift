@@ -23,10 +23,21 @@ struct PlayerView: View {
                     .animation(.spring(response: 0.45, dampingFraction: 0.75), value: player.isPlaying)
 
                 VStack(spacing: 4) {
-                    Text(track?.title ?? "Nada en reproducción")
-                        .font(.title2.bold()).lineLimit(1)
-                    Text(track?.artist ?? "Elige una canción de tu biblioteca")
-                        .font(.body).foregroundColor(.secondary).lineLimit(1)
+                    if let track = track {
+                        HStack(spacing: 6) {
+                            Text(track.title).font(.title2.bold()).lineLimit(1)
+                            if track.explicit {
+                                Image(systemName: "e.square.fill").font(.headline).foregroundColor(.secondary)
+                            }
+                        }
+                        Text(track.artist).font(.body).foregroundColor(.secondary).lineLimit(1)
+                        if !track.album.isEmpty {
+                            Text(track.album).font(.footnote).foregroundColor(.secondary.opacity(0.8)).lineLimit(1)
+                        }
+                    } else {
+                        Text("Nada en reproducción").font(.title2.bold()).lineLimit(1)
+                        Text("Elige una canción de tu biblioteca").font(.body).foregroundColor(.secondary).lineLimit(1)
+                    }
                 }
                 .padding(.horizontal)
 
@@ -40,10 +51,12 @@ struct PlayerView: View {
                     Button { showEffects = true } label: {
                         Label("Efectos", systemImage: "slider.horizontal.3")
                     }
+                    .glassButton()
                     Spacer()
                     Button { showQueue = true } label: {
                         Label("Cola", systemImage: "list.bullet")
                     }
+                    .glassButton()
                 }
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 28)
@@ -102,7 +115,7 @@ struct PlayerView: View {
                 Text(formatTime(scrubbing ? scrubValue : player.currentTime))
                 Spacer()
                 if player.settings.slowedOn && player.settings.speed != 1 {
-                    Text("dura \(formatTime(player.duration / Double(player.settings.speed)))")
+                    Text("dura \(formatTime(player.duration / Double(player.settings.speed)))" as LocalizedStringKey)
                         .foregroundColor(Theme.accent)
                 }
                 Spacer()
@@ -115,6 +128,7 @@ struct PlayerView: View {
     }
 
     private var controls: some View {
+        GlassGroup(spacing: 20) {
         HStack(spacing: 0) {
             Button { player.toggleShuffle() } label: {
                 Image(systemName: "shuffle")
@@ -128,12 +142,16 @@ struct PlayerView: View {
             .frame(maxWidth: .infinity)
             Button { player.togglePlayPause() } label: {
                 ZStack {
-                    Circle().fill(Theme.gradient).frame(width: 74, height: 74)
+                    if !isGlassAvailable {
+                        Circle().fill(Theme.gradient)
+                    }
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.white)
                         .offset(x: player.isPlaying ? 0 : 2)
                 }
+                .frame(width: 74, height: 74)
+                .glassCard(shape: .circle, tint: Theme.accent, interactive: true, fallback: false)
             }
             .frame(maxWidth: .infinity)
             Button { player.next() } label: {
@@ -149,7 +167,10 @@ struct PlayerView: View {
         }
         .buttonStyle(.plain)
         .foregroundColor(.primary)
+        .padding(.vertical, isGlassAvailable ? 10 : 0)
+        .glassCard(cornerRadius: 46, fallback: false)
         .padding(.horizontal, 12)
+        }
     }
 
     private var slowedCard: some View {
@@ -161,14 +182,16 @@ struct PlayerView: View {
             } label: {
                 HStack {
                     Image(systemName: "tortoise.fill")
-                    Text(player.settings.slowedOn ? "Slowed + Reverb activado" : "Activar Slowed + Reverb")
+                    Text(player.settings.slowedOn ? LocalizedStringKey("Slowed + Reverb activado") : LocalizedStringKey("Activar Slowed + Reverb"))
                         .fontWeight(.bold)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(
                     Group {
-                        if player.settings.slowedOn {
+                        if isGlassAvailable {
+                            Color.clear
+                        } else if player.settings.slowedOn {
                             Theme.gradient
                         } else {
                             LinearGradient(colors: [Color.secondary.opacity(0.18)], startPoint: .leading, endPoint: .trailing)
@@ -176,7 +199,8 @@ struct PlayerView: View {
                     }
                 )
                 .foregroundColor(player.settings.slowedOn ? .white : .primary)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .glassCard(cornerRadius: 18, tint: player.settings.slowedOn ? Theme.accent : nil, interactive: true, fallback: false)
             }
             .buttonStyle(.plain)
 

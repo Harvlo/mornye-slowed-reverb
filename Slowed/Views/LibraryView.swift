@@ -5,7 +5,6 @@ struct LibraryView: View {
     @EnvironmentObject var player: AudioPlayer
     @EnvironmentObject var library: Library
     @Binding var showPlayer: Bool
-    @State private var showImporter = false
     @State private var search = ""
     @State private var sortMode = 0 // 0 recientes, 1 titulo, 2 artista
     @State private var exporting: Track? = nil
@@ -13,13 +12,6 @@ struct LibraryView: View {
     @State private var exportResult: URL? = nil
     @State private var showShare = false
     @State private var editing: Track? = nil
-
-    private var importTypes: [UTType] {
-        var types: [UTType] = [.audio, .mp3, .mpeg4Audio, .wav, .aiff]
-        if let flac = UTType(filenameExtension: "flac") { types.append(flac) }
-        if let flac2 = UTType("org.xiph.flac") { types.append(flac2) }
-        return types
-    }
 
     private var visibleTracks: [Track] {
         var list = library.tracks
@@ -57,19 +49,23 @@ struct LibraryView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showImporter = true } label: {
+                    Button { openImporter() } label: {
                         Image(systemName: "plus.circle.fill").font(.title3)
                     }
-                }
-            }
-            .fileImporter(isPresented: $showImporter, allowedContentTypes: importTypes, allowsMultipleSelection: true) { result in
-                if case .success(let urls) = result {
-                    library.importFiles(urls)
                 }
             }
             .safeAreaInset(edge: .bottom) { MiniPlayerBar(showPlayer: $showPlayer) }
             .overlay(alignment: .top) { toast }
             .overlay { exportOverlay }
+            .overlay { importOverlay }
+            .alert("Importar", isPresented: Binding(
+                get: { library.importAlert != nil },
+                set: { if !$0 { library.importAlert = nil } }
+            )) {
+                Button("OK", role: .cancel) { library.importAlert = nil }
+            } message: {
+                Text(library.importAlert ?? "")
+            }
             .sheet(isPresented: $showShare) {
                 if let url = exportResult {
                     ShareSheet(items: [url])
@@ -96,15 +92,14 @@ struct LibraryView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
             Button {
-                showImporter = true
+                openImporter()
             } label: {
                 Label("Importar canciones", systemImage: "square.and.arrow.down")
                     .font(.headline)
-                    .padding(.horizontal, 22).padding(.vertical, 12)
-                    .background(Theme.gradient)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
+                    .padding(.horizontal, 10).padding(.vertical, 6)
             }
+            .glassButton(prominent: true)
+            .controlSize(.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -121,8 +116,7 @@ struct LibraryView: View {
                         Label("Reproducir", systemImage: "play.fill")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(Theme.accent.opacity(0.18))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .glassCard(cornerRadius: 12, tint: isGlassAvailable ? nil : Theme.accent.opacity(0.2), interactive: true)
                     }
                     Button {
                         if !player.shuffle { player.toggleShuffle() }
@@ -134,8 +128,7 @@ struct LibraryView: View {
                         Label("Aleatorio", systemImage: "shuffle")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(Theme.accent.opacity(0.18))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .glassCard(cornerRadius: 12, tint: isGlassAvailable ? nil : Theme.accent.opacity(0.2), interactive: true)
                     }
                 }
                 .buttonStyle(.plain)
@@ -179,8 +172,7 @@ struct LibraryView: View {
             Text(msg)
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16).padding(.vertical, 10)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
+                .glassCard(shape: .capsule)
                 .padding(.top, 8)
                 .onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
@@ -202,9 +194,29 @@ struct LibraryView: View {
                     Text("\(Int(exportProgress * 100))%").font(.caption).foregroundColor(.secondary)
                 }
                 .padding(24)
-                .background(.regularMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .glassCard(cornerRadius: 18)
                 .padding(30)
+            }
+        }
+    }
+
+    private func openImporter() {
+        ImportPicker.shared.present { urls in
+            library.importFiles(urls)
+        }
+    }
+
+    @ViewBuilder
+    private var importOverlay: some View {
+        if library.isImporting {
+            ZStack {
+                Color.black.opacity(0.35).ignoresSafeArea()
+                VStack(spacing: 12) {
+                    ProgressView().controlSize(.large)
+                    Text(library.importStatus).font(.headline)
+                }
+                .padding(24)
+                .modifier(GlassCard(cornerRadius: 18))
             }
         }
     }
@@ -226,14 +238,14 @@ struct LibraryView: View {
                 DispatchQueue.main.async {
                     exporting = nil
                     library.refresh()
-                    library.lastMessage = "Guardada en la biblioteca"
+                    library.lastMessage = L("Guardada en la biblioteca")
                     exportResult = url
                     showShare = true
                 }
             } catch {
                 DispatchQueue.main.async {
                     exporting = nil
-                    player.errorMessage = "No se pudo exportar: \(error.localizedDescription)"
+                    player.errorMessage = L("No se pudo exportar: %@", error.localizedDescription)
                 }
             }
         }
@@ -253,7 +265,11 @@ struct TrackRow: View {
                     .font(.body.weight(isCurrent ? .bold : .regular))
                     .foregroundColor(isCurrent ? Theme.accent : .primary)
                     .lineLimit(1)
-                Text(track.artist).font(.caption).foregroundColor(.secondary).lineLimit(1)
+                HStack(spacing: 4) {
+                    if track.explicit { ExplicitBadge() }
+                    Text(track.album.isEmpty ? track.artist : track.artist + " · " + track.album)
+                        .font(.caption).foregroundColor(.secondary).lineLimit(1)
+                }
             }
             Spacer()
             if isCurrent {
@@ -304,4 +320,13 @@ struct ShareSheet: UIViewControllerRepresentable {
         UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+struct ExplicitBadge: View {
+    var body: some View {
+        Image(systemName: "e.square.fill")
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .accessibilityLabel(Text("Explícito"))
+    }
 }
