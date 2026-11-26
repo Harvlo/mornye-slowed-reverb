@@ -20,7 +20,17 @@
       "tintColor": "#A36BFF",
       "category": "entertainment",
       "screenshots": [],
-      "versions": [],
+      "versions": [
+        {
+          "version": "1.0.6",
+          "buildVersion": "6",
+          "date": "2026-11-26T00:57:25Z",
+          "localizedDescription": "AltStore/SideStore source with auto-update in CI, versioned builds, landing page, new README",
+          "downloadURL": "https://github.com/Harvlo/mornye-slowed-reverb/releases/download/v1.0.6/Slowed.ipa",
+          "size": 643278,
+          "minOSVersion": "16.0"
+        }
+      ],
       "appPermissions": {
         "entitlements": [],
         "privacy": {}
@@ -30,7 +40,12 @@
           "type": "background-audio",
           "usageDescription": "Keeps your music playing in the background and on the lock screen."
         }
-      ]
+      ],
+      "version": "1.0.6",
+      "versionDate": "2026-11-26T00:57:25Z",
+      "versionDescription": "AltStore/SideStore source with auto-update in CI, versioned builds, landing page, new README",
+      "downloadURL": "https://github.com/Harvlo/mornye-slowed-reverb/releases/download/v1.0.6/Slowed.ipa",
+      "size": 643278
     }
   ],
   "news": []
